@@ -79,7 +79,7 @@ public class InnReservations {
         bedType = scanner.nextLine();
     }
 
-    private void CancelReservation(Scanner scanner) throws SQLException {
+    private void CancelReservation(Scanner scanner) {
 
         // Step 1: Establish connection to RDBMS
         try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
@@ -110,6 +110,8 @@ public class InnReservations {
                 conn.rollback();
             }
 
+        } catch (SQLException e){
+            System.out.println("Connection couldn't be made with database");
         }
 
     }

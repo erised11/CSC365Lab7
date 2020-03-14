@@ -105,6 +105,7 @@ public class InnReservations {
                 // Step 5: Handle results
                 System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
 
+                conn.commit();
 
             } catch (SQLException e){
                 conn.rollback();

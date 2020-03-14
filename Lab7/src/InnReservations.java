@@ -102,13 +102,15 @@ public class InnReservations {
                 pstmt.setString(1, resCode);
                 int rowCount = pstmt.executeUpdate();
 
+                // Step 5: Handle results
                 if(rowCount == 0) {
                     System.out.format("No reservation found with code %s", resCode);
                 }
+                else{
+                    System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
 
-                // Step 5: Handle results
-                System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
-
+                }
+                
                 conn.commit();
 
             } catch (SQLException e){

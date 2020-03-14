@@ -1,7 +1,15 @@
 import java.util.*;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.util.Scanner;
 
 public class InnReservations {
     public static void main(String args[]){
+
 
         InnReservations ir = new InnReservations();
 
@@ -37,6 +45,7 @@ public class InnReservations {
                     break;
                 case "4":
                     System.out.println("Reservation Cancellation:\n");
+                    CancelReservation(scanner);
                     break;
                 case "5":
                     System.out.println("Detailed Reservation Information:\n");
@@ -55,7 +64,7 @@ public class InnReservations {
     }
 
     private void Reservations(Scanner scanner){
-        String fName, lName, rCode, bedType;
+        String fName, lName, roomCode, bedType;
         Date beginDate, endDate;
         int numChildren, numAdults;
 
@@ -65,9 +74,44 @@ public class InnReservations {
         System.out.print("Last name: ");
         lName = scanner.nextLine();
         System.out.print("Room code ('Any' if no preference): ");
-        rCode = scanner.nextLine();
+        roomCode = scanner.nextLine();
         System.out.print("Bed type ('Any' if no preference): ");
         bedType = scanner.nextLine();
+    }
+
+    private void CancelReservation(Scanner scanner) throws SQLException {
+
+        // Step 1: Establish connection to RDBMS
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                System.getenv("HP_JDBC_USER"),
+                System.getenv("HP_JDBC_PW"))) {
+
+            // Step 2: Construct sql statement
+            String resCode;
+            System.out.print("Enter a reservation code to cancel");
+            resCode = scanner.nextLine();
+
+            String sqlStatement = "DELETE from lab7_reservations where code = ?";
+
+            // Step 3: start transaction
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+
+                // Step 4: Send SQL statement to DBMS
+                pstmt.setString(1, resCode);
+                int rowCount = pstmt.executeUpdate();
+
+                // Step 5: Handle results
+                System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
+
+
+            } catch (SQLException e){
+                conn.rollback();
+            }
+
+        }
+
     }
 
 }

@@ -88,7 +88,7 @@ public class InnReservations {
 
             // Step 2: Construct sql statement
             String resCode;
-            System.out.print("Enter a reservation code to cancel");
+            System.out.print("Enter a reservation code to cancel: ");
             resCode = scanner.nextLine();
 
             String sqlStatement = "DELETE from lab7_reservations where code = ?";
@@ -101,6 +101,10 @@ public class InnReservations {
                 // Step 4: Send SQL statement to DBMS
                 pstmt.setString(1, resCode);
                 int rowCount = pstmt.executeUpdate();
+
+                if(rowCount == 0) {
+                    System.out.format("No reservation found with code %s", resCode);
+                }
 
                 // Step 5: Handle results
                 System.out.format("Deleted %d reservation with code %s", rowCount, resCode);

@@ -68,82 +68,81 @@ public class InnReservations {
         }
     }
 
-    private void RoomsAndRates(){
-                
+    private void RoomsAndRates() {
+
         try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"), System.getenv("HP_JDBC_USER"), System.getenv("HP_JDBC_PW"))) {
 
             // Step 2: Construct sql statement
-            
+
             String sqlStatement = "with popularities as (" +
-               "select room, " +
-                  "round(sum(datediff(checkout, checkin))/180, 2) pop " +
-               "from lab7_reservations " +
-               "group by room), " +
-            "nextavailable as ( " +
-               "select room, " +
-                  "min(checkout) next " +
-               "from lab7_reservations " +
-               "where checkout >= curdate() " +
-               "group by room), " +
-            "staylengths as (" +
-               "select room, " +
-                  "code, " +
-                  "checkin, checkout, " +
-                  "datediff(checkout, checkin) length, " +
-                  "max(checkout) over (partition by room) latest " +
-               "from lab7_reservations " +
-               "where checkout < curdate()), " +
-            "mostrecent as ( " +
-               "select room, " +
-                  "length, " +
-                  "checkout " +
-               "from staylengths " +
-               "where checkout = latest) " +
-            "select r.*, " +
-               "p.pop popularity, " +
-               "na.next 'next available', " +
-               "mr.length 'length of last stay', " +
-               "mr.checkout 'last checkout' " +
-            "from lab7_rooms r " +
-               "join popularities p on r.roomcode = p.room " +
-               "join nextavailable na on r.roomcode = na.room " +
-               "join mostrecent mr on r.roomcode = mr.room " +
-            "order by p.pop desc;";
-        
+                    "select room, " +
+                    "round(sum(datediff(checkout, checkin))/180, 2) pop " +
+                    "from lab7_reservations " +
+                    "group by room), " +
+                    "nextavailable as ( " +
+                    "select room, " +
+                    "min(checkout) next " +
+                    "from lab7_reservations " +
+                    "where checkout >= curdate() " +
+                    "group by room), " +
+                    "staylengths as (" +
+                    "select room, " +
+                    "code, " +
+                    "checkin, checkout, " +
+                    "datediff(checkout, checkin) length, " +
+                    "max(checkout) over (partition by room) latest " +
+                    "from lab7_reservations " +
+                    "where checkout < curdate()), " +
+                    "mostrecent as ( " +
+                    "select room, " +
+                    "length, " +
+                    "checkout " +
+                    "from staylengths " +
+                    "where checkout = latest) " +
+                    "select r.*, " +
+                    "p.pop popularity, " +
+                    "na.next 'next available', " +
+                    "mr.length 'length of last stay', " +
+                    "mr.checkout 'last checkout' " +
+                    "from lab7_rooms r " +
+                    "join popularities p on r.roomcode = p.room " +
+                    "join nextavailable na on r.roomcode = na.room " +
+                    "join mostrecent mr on r.roomcode = mr.room " +
+                    "order by p.pop desc;";
+
             // Step 3: start transaction
             conn.setAutoCommit(false);
 
             try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
                 ResultSet rs = pstmt.executeQuery();
-                
+
 
                 // print out results
                 while (rs.next()) {
-                    System.out.println("Room Code: "+rs.getString("RoomCode"));
-                    System.out.println("Room Name: "+rs.getString("RoomName"));
-                    System.out.println("Beds: "+rs.getString("Beds"));
-                    System.out.println("Bed Type: "+rs.getString("bedType"));
-                    System.out.println("Max Occ.: "+rs.getInt("maxOcc"));
-                    System.out.println("Base Price: "+rs.getString("basePrice"));
-                    System.out.println("Decor: "+rs.getString("decor"));
-                    System.out.println("Popularity: "+rs.getString("popularity"));
-                    System.out.println("Next Available: "+rs.getString("next available"));
-                    System.out.println("Length of Last Stay: "+rs.getInt("length of last stay"));
-                    System.out.println("Last Checkout: "+rs.getString("last checkout"));
+                    System.out.println("Room Code: " + rs.getString("RoomCode"));
+                    System.out.println("Room Name: " + rs.getString("RoomName"));
+                    System.out.println("Beds: " + rs.getString("Beds"));
+                    System.out.println("Bed Type: " + rs.getString("bedType"));
+                    System.out.println("Max Occ.: " + rs.getInt("maxOcc"));
+                    System.out.println("Base Price: " + rs.getString("basePrice"));
+                    System.out.println("Decor: " + rs.getString("decor"));
+                    System.out.println("Popularity: " + rs.getString("popularity"));
+                    System.out.println("Next Available: " + rs.getString("next available"));
+                    System.out.println("Length of Last Stay: " + rs.getInt("length of last stay"));
+                    System.out.println("Last Checkout: " + rs.getString("last checkout"));
                     System.out.println("\n");
                 }
-                
-                
-            } catch (SQLException e){
+
+
+            } catch (SQLException e) {
                 System.out.println("prepare statement didnt work yoikes");
-                
+
                 conn.rollback();
             }
 
-        } catch (SQLException e){
+        } catch (SQLException e) {
             System.out.println("Connection couldn't be made with database");
         }
-
     }
 
     private void Reservations(Scanner scanner){
@@ -205,97 +204,95 @@ public class InnReservations {
 
         }
 
-        private void ChangeReservation(Scanner scanner) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    private void ChangeReservation(Scanner scanner) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-            // Step 1: Establish connection to RDBMS
-            try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-                    System.getenv("HP_JDBC_USER"),
-                    System.getenv("HP_JDBC_PW"))) {
+        // Step 1: Establish connection to RDBMS
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                System.getenv("HP_JDBC_USER"),
+                System.getenv("HP_JDBC_PW"))) {
 
-                // Step 2: Construct sql statement
-                String resCode, fname, lname;
-                Date beginDate, endDate;
-                System.out.print("Enter a reservation code to change: ");
-                resCode = scanner.nextLine();
+            // Step 2: Construct sql statement
+            String resCode, fname, lname;
+            Date beginDate, endDate;
+            System.out.print("Enter a reservation code to change: ");
+            resCode = scanner.nextLine();
 
-                System.out.print("Enter updated first name (or 'no change'): ");
-                fname = scanner.nextLine();
+            System.out.print("Enter updated first name (or 'no change'): ");
+            fname = scanner.nextLine();
 
-                System.out.print("Enter updated last name: (or 'no change')");
-                lname = scanner.nextLine();
+            System.out.print("Enter updated last name: (or 'no change')");
+            lname = scanner.nextLine();
 
-                System.out.println("Enter updated begin date (format: yyyy-MM-dd): (or 'no change')");
-                String dateStr = scanner.nextLine();
-                if(!dateStr.equals("no change")){
-                    try {
-                        Date dateBegin = sdf.parse(dateStr);
-                    } catch (ParseException e) {
-                        System.out.println("Date entered incorrectly");
-                    }
-                }
-
-                System.out.println("Enter updated end date (format: yyyy-MM-dd): (or 'no change')");
-                String dateEndStr = scanner.nextLine();
-                if(!dateStr.equals("no change")) {
-                    try {
-                        Date dateEnd = sdf.parse(dateStr);
-                    } catch (ParseException e) {
-                        System.out.println("Date entered incorrectly");
-                    }
-                }
-
-                int numChildren, numAdults;
-
-                System.out.print("Enter updated number of children: ");
+            System.out.println("Enter updated begin date (format: yyyy-MM-dd): (or 'no change')");
+            String dateStr = scanner.nextLine();
+            if(!dateStr.equals("no change")){
                 try {
-                    numChildren = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    System.out.println("A number must be entered for children");
+                    Date dateBegin = sdf.parse(dateStr);
+                } catch (ParseException e) {
+                    System.out.println("Date entered incorrectly");
                 }
-
-                System.out.print("Enter updated number of adults: ");
-                try {
-                    numAdults = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    System.out.println("A number must be entered for children");
-                }
-
-
-                String sqlStatement = "UPDATE lab7_reservations set where code = ?";
-
-                // Step 3: start transaction
-                conn.setAutoCommit(false);
-
-                try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
-
-                    // Step 4: Send SQL statement to DBMS
-                    pstmt.setString(1, resCode);
-                    int rowCount = pstmt.executeUpdate();
-
-                    // Step 5: Handle results
-                    if(rowCount == 0) {
-                        System.out.format("No reservation found with code %s", resCode);
-                    }
-                    else{
-                        System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
-                    }
-
-                    conn.commit();
-
-                } catch (SQLException e){
-                    conn.rollback();
-                }
-
-            } catch (SQLException e){
-                System.out.println("Connection couldn't be made with database");
             }
 
+            System.out.println("Enter updated end date (format: yyyy-MM-dd): (or 'no change')");
+            String dateEndStr = scanner.nextLine();
+            if(!dateStr.equals("no change")) {
+                try {
+                    Date dateEnd = sdf.parse(dateStr);
+                } catch (ParseException e) {
+                    System.out.println("Date entered incorrectly");
+                }
+            }
+
+            int numChildren, numAdults;
+
+            System.out.print("Enter updated number of children: ");
+            try {
+                numChildren = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("A number must be entered for children");
+            }
+
+            System.out.print("Enter updated number of adults: ");
+            try {
+                numAdults = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("A number must be entered for children");
+            }
+
+
+            String sqlStatement = "UPDATE lab7_reservations set where code = ?";
+
+            // Step 3: start transaction
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+
+                // Step 4: Send SQL statement to DBMS
+                pstmt.setString(1, resCode);
+                int rowCount = pstmt.executeUpdate();
+
+                // Step 5: Handle results
+                if(rowCount == 0) {
+                    System.out.format("No reservation found with code %s", resCode);
+                }
+                else{
+                    System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
+                }
+
+                conn.commit();
+
+            } catch (SQLException e){
+                conn.rollback();
+            }
+
+        } catch (SQLException e){
+            System.out.println("Connection couldn't be made with database");
         }
 
-
-
     }
+
+
     private void Revenue() {
          try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"), System.getenv("HP_JDBC_USER"), System.getenv("HP_JDBC_PW"))) {
             String sql = "with BeforeMonth as " +

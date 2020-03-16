@@ -23,13 +23,13 @@ public class InnReservations {
 
     private void runPrompt(Scanner scanner) {
         System.out.println("Select an option\n");
-        System.out.println("Rooms and Rates (1)");
-        System.out.println("Reservations (2)");
-        System.out.println("Reservation Change (3)");
-        System.out.println("Reservation Cancellation (4)");
-        System.out.println("Detailed Reservation Information (5)");
-        System.out.println("Revenue (6)");
-        System.out.println("Exit (0)\n");
+        System.out.println("(1) Rooms and Rates");
+        System.out.println("(2) Reservations");
+        System.out.println("(3) Reservation Change");
+        System.out.println("(4) Reservation Cancellation");
+        System.out.println("(5) Detailed Reservation Information");
+        System.out.println("(6) Revenue");
+        System.out.println("(0) Exit\n");
 
         String input = "garbage";
 
@@ -59,12 +59,14 @@ public class InnReservations {
                 case "6":
                      System.out.println("Revenue");
                      Revenue();
+                     break;
                 case "0":
                     return;
                 default:
                     System.out.println("Not a valid option\n");
                     break;
             }
+            System.out.println("Select an option\n");
         }
     }
 

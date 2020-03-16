@@ -123,7 +123,6 @@ public class InnReservations {
         }
 
     }
-
     private void Revenue() {
          try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
                 System.getenv("HP_JDBC_USER"),
@@ -254,5 +253,4 @@ public class InnReservations {
         }
 
     }
-
 }

@@ -198,9 +198,7 @@ public class InnReservations {
 
     }
     private void Revenue() {
-         try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-                System.getenv("HP_JDBC_USER"),
-                System.getenv("HP_JDBC_PW"))) {
+         try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"), System.getenv("HP_JDBC_USER"), System.getenv("HP_JDBC_PW"))) {
             String sql = "with BeforeMonth as" +
                         "(select monthname(CheckIn) month, Room, sum(datediff(least(Checkout,last_day(CheckIn)), CheckIn) * Rate) Total" +
                         "from Reservations" +

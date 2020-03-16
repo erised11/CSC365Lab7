@@ -1,3 +1,5 @@
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -6,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.Scanner;
+import java.text.ParseException;
 
 public class InnReservations {
     public static void main(String args[]){
@@ -42,6 +45,7 @@ public class InnReservations {
                     break;
                 case "3":
                     System.out.println("Reservation Change:\n");
+                    ChangeReservation(scanner);
                     break;
                 case "4":
                     System.out.println("Reservation Cancellation:\n");
@@ -183,18 +187,109 @@ public class InnReservations {
                 }
                 else{
                     System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
-
                 }
-                
+
                 conn.commit();
 
+                } catch (SQLException e){
+                    conn.rollback();
+                }
+
             } catch (SQLException e){
-                conn.rollback();
+                System.out.println("Connection couldn't be made with database");
             }
 
-        } catch (SQLException e){
-            System.out.println("Connection couldn't be made with database");
         }
+
+        private void ChangeReservation(Scanner scanner) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+            // Step 1: Establish connection to RDBMS
+            try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                    System.getenv("HP_JDBC_USER"),
+                    System.getenv("HP_JDBC_PW"))) {
+
+                // Step 2: Construct sql statement
+                String resCode, fname, lname;
+                Date beginDate, endDate;
+                System.out.print("Enter a reservation code to change: ");
+                resCode = scanner.nextLine();
+
+                System.out.print("Enter updated first name (or 'no change'): ");
+                fname = scanner.nextLine();
+
+                System.out.print("Enter updated last name: (or 'no change')");
+                lname = scanner.nextLine();
+
+                System.out.println("Enter updated begin date (format: yyyy-MM-dd): (or 'no change')");
+                String dateStr = scanner.nextLine();
+                if(!dateStr.equals("no change")){
+                    try {
+                        Date dateBegin = sdf.parse(dateStr);
+                    } catch (ParseException e) {
+                        System.out.println("Date entered incorrectly");
+                    }
+                }
+
+                System.out.println("Enter updated end date (format: yyyy-MM-dd): (or 'no change')");
+                String dateEndStr = scanner.nextLine();
+                if(!dateStr.equals("no change")) {
+                    try {
+                        Date dateEnd = sdf.parse(dateStr);
+                    } catch (ParseException e) {
+                        System.out.println("Date entered incorrectly");
+                    }
+                }
+
+                int numChildren, numAdults;
+
+                System.out.print("Enter updated number of children: ");
+                try {
+                    numChildren = Integer.parseInt(scanner.nextLine());
+                } catch (NumberFormatException e) {
+                    System.out.println("A number must be entered for children");
+                }
+
+                System.out.print("Enter updated number of adults: ");
+                try {
+                    numAdults = Integer.parseInt(scanner.nextLine());
+                } catch (NumberFormatException e) {
+                    System.out.println("A number must be entered for children");
+                }
+
+
+                String sqlStatement = "UPDATE lab7_reservations set where code = ?";
+
+                // Step 3: start transaction
+                conn.setAutoCommit(false);
+
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+
+                    // Step 4: Send SQL statement to DBMS
+                    pstmt.setString(1, resCode);
+                    int rowCount = pstmt.executeUpdate();
+
+                    // Step 5: Handle results
+                    if(rowCount == 0) {
+                        System.out.format("No reservation found with code %s", resCode);
+                    }
+                    else{
+                        System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
+                    }
+
+                    conn.commit();
+
+                } catch (SQLException e){
+                    conn.rollback();
+                }
+
+            } catch (SQLException e){
+                System.out.println("Connection couldn't be made with database");
+            }
+
+        }
+
+
 
     }
     private void Revenue() {

@@ -61,7 +61,81 @@ public class InnReservations {
     }
 
     private void RoomsAndRates(){
-        //TODO: FR-1
+                
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"), System.getenv("HP_JDBC_USER"), System.getenv("HP_JDBC_PW"))) {
+
+            // Step 2: Construct sql statement
+            
+            String sqlStatement = "with popularities as (" +
+               "select room, " +
+                  "round(sum(datediff(checkout, checkin))/180, 2) pop " +
+               "from lab7_reservations " +
+               "group by room), " +
+            "nextavailable as ( " +
+               "select room, " +
+                  "min(checkout) next " +
+               "from lab7_reservations " +
+               "where checkout >= curdate() " +
+               "group by room), " +
+            "staylengths as (" +
+               "select room, " +
+                  "code, " +
+                  "checkin, checkout, " +
+                  "datediff(checkout, checkin) length, " +
+                  "max(checkout) over (partition by room) latest " +
+               "from lab7_reservations " +
+               "where checkout < curdate()), " +
+            "mostrecent as ( " +
+               "select room, " +
+                  "length, " +
+                  "checkout " +
+               "from staylengths " +
+               "where checkout = latest) " +
+            "select r.*, " +
+               "p.pop popularity, " +
+               "na.next 'next available', " +
+               "mr.length 'length of last stay', " +
+               "mr.checkout 'last checkout' " +
+            "from lab7_rooms r " +
+               "join popularities p on r.roomcode = p.room " +
+               "join nextavailable na on r.roomcode = na.room " +
+               "join mostrecent mr on r.roomcode = mr.room " +
+            "order by p.pop desc;";
+        
+            // Step 3: start transaction
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+                ResultSet rs = pstmt.executeQuery();
+                
+
+                // print out results
+                while (rs.next()) {
+                    System.out.println("Room Code: "+rs.getString("RoomCode"));
+                    System.out.println("Room Name: "+rs.getString("RoomName"));
+                    System.out.println("Beds: "+rs.getString("Beds"));
+                    System.out.println("Bed Type: "+rs.getString("bedType"));
+                    System.out.println("Max Occ.: "+rs.getInt("maxOcc"));
+                    System.out.println("Base Price: "+rs.getString("basePrice"));
+                    System.out.println("Decor: "+rs.getString("decor"));
+                    System.out.println("Popularity: "+rs.getString("popularity"));
+                    System.out.println("Next Available: "+rs.getString("next available"));
+                    System.out.println("Length of Last Stay: "+rs.getInt("length of last stay"));
+                    System.out.println("Last Checkout: "+rs.getString("last checkout"));
+                    System.out.println("\n");
+                }
+                
+                
+            } catch (SQLException e){
+                System.out.println("prepare statement didnt work yoikes");
+                
+                conn.rollback();
+            }
+
+        } catch (SQLException e){
+            System.out.println("Connection couldn't be made with database");
+        }
+
     }
 
     private void Reservations(Scanner scanner){

@@ -148,21 +148,157 @@ public class InnReservations {
     }
 
     private void Reservations(Scanner scanner){
-        String fName, lName, roomCode, bedType;
-        Date beginDate, endDate;
-        int numChildren, numAdults;
+         // Step 1: Establish connection to RDBMS
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                System.getenv("HP_JDBC_USER"),
+                System.getenv("HP_JDBC_PW"))) {
+            // Step 2: Construct sql statement
+            String firstName;
+            String lastName;
+            String checkIn;
+            String checkOut;
+            String roomCode;
+            String bedType;
+            String numChildren;
+            String numAdults;
+            
+            
+            System.out.print("First name: ");
+            while ((firstName = scanner.nextLine()) == "")
+                System.out.print("First name cannot be empty: ");
+            
+            System.out.print("Last name: ");
+            while ((lastName = scanner.nextLine()) == "")
+                System.out.print("Last name cannot be empty: ");
+            
+            System.out.print("Room Code: ");
+            roomCode = scanner.nextLine();
+            
+            System.out.print("Bed Type: ");
+            bedType = scanner.nextLine();
 
-        System.out.println("Please enter the following information:\n");
-        System.out.print("First name: ");
-        fName = scanner.nextLine();
-        System.out.print("Last name: ");
-        lName = scanner.nextLine();
-        System.out.print("Room code ('Any' if no preference): ");
-        roomCode = scanner.nextLine();
-        System.out.print("Bed type ('Any' if no preference): ");
-        bedType = scanner.nextLine();
+            System.out.print("Check in date: ");
+            while ((checkIn = scanner.nextLine()) == "")
+                System.out.print("Check in date cannot be empty: ");
+
+            System.out.print("Check out date: ");
+            while ((checkOut = scanner.nextLine()) == "")
+                System.out.print("Check out date cannot be empty: ");
+            
+            System.out.print("Number of Children: ");
+            while ((numChildren = scanner.nextLine()) == "")
+                System.out.print("Number of children cannot be empty: ");
+
+            System.out.print("Number of Adults: ");
+            while ((numAdults = scanner.nextLine()) == "")
+                System.out.print("Number of adults cannot be empty: ");
+            
+            if (!CheckValidRoom(Integer.parseInt(numChildren), Integer.parseInt(numAdults), roomCode, bedType)) {
+                System.out.println("No rooms fit");
+                return;
+            }
+
+            String sqlStatement = "SELECT * from lab7_reservations join lab7_rooms on room = roomcode where ";
+
+            if (roomCode.equals("")) {
+                sqlStatement += "room is not null ";
+            }
+            else
+                sqlStatement += "room = ? ";
+            
+            if (bedType.equals("")) {
+                sqlStatement += "and bedType is not null ";
+            }
+            else
+                sqlStatement += "and bedType = ? ";
+            
+            sqlStatement += "and checkIn = ? ";
+
+            sqlStatement += "and checkOut = ? ";
+            
+            // Step 3: start transaction
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+                
+                // Step 4: Send SQL statement to DBMS
+                int numParams = 0;
+                
+                if (!roomCode.equals("")) {
+                    numParams++;
+                    pstmt.setString(numParams, roomCode);
+                }
+
+                if (!bedType.equals("")) {
+                    numParams++;
+                    pstmt.setString(numParams, bedType);
+                }
+                
+                numParams++;
+                pstmt.setString(numParams, checkIn);
+                
+                numParams++;
+                pstmt.setString(numParams, checkOut);
+                
+                System.out.println("sql: " + sqlStatement);
+                
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next())
+                    System.out.println("reservations already booked m8, ya fucked");
+                else
+                    System.out.println("reservations open ya mad lad!");
+                
+                // Step 5: Handle results
+
+                conn.commit();
+
+                } catch (SQLException e){
+                    System.out.println("Rollback" + e);
+                    conn.rollback();
+                }
+
+            } catch (SQLException e){
+               System.out.println("Connection couldn't be made with database");
+            }
+
     }
-
+    
+    private boolean CheckValidRoom(int c, int a, String roomCode, String bedType) {
+        
+        boolean valid = false;
+        
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                                                           System.getenv("HP_JDBC_USER"),
+                                                           System.getenv("HP_JDBC_PW"))) {
+            String sqlStatement = "select * from lab7_rooms";
+            
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    if (rs.getInt("maxOcc") >= (c + a) && roomCode.equals(""))
+                        valid = true;
+                    else if (roomCode.equals(rs.getString("roomcode"))) {
+                        if (rs.getInt("maxOcc") >= (c + a) && (bedType.equals(rs.getString("bedtype")) || bedType.equals("")))
+                            valid = true;
+                    }
+                }
+                
+            } catch (SQLException e) {
+                System.out.println("Rollback " + e);
+                conn.rollback();
+            }
+            
+            return valid;
+        } catch (SQLException e) {
+            System.out.println("Connection couldn't be made with database");
+            return false;
+        }
+    }
+    
     private void CancelReservation(Scanner scanner) {
 
         // Step 1: Establish connection to RDBMS

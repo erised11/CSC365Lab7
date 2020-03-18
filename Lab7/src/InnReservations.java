@@ -342,7 +342,72 @@ public class InnReservations {
                 System.out.println("Connection couldn't be made with database");
             }
 
+    }
+
+    private boolean checkValidDates(String code, String newIn, String newOut) {
+        try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+                System.getenv("HP_JDBC_USER"),
+                System.getenv("HP_JDBC_PW"))) {
+            String stmt = "with res as (select code, room, checkin, checkout from lab7_reservations where code = ?) " +
+                    "select * from res r join reservations rs on r.room and r.code != rs.code where not ";
+
+            int numParams = 1;
+            boolean out = false;
+            boolean in = false;
+
+            if(newOut != "no change"){
+                stmt += "(? <= rs.checkin or ";
+                out = true;
+            } else
+                stmt += "(r.checkout <= rs.checkin or ";
+            if(newIn != "no change"){
+                stmt += "? >= rs.checkout)";
+                in = true;
+            }
+            else{
+                stmt += "r.checkin >= rs.checkout)";
+            }
+
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement pstmt = conn.prepareStatement(stmt)) {
+
+                int place = 1;
+                pstmt.setString(place, code);
+                place++;
+
+                if(out && !in){
+                    pstmt.setString(place, newOut);
+                    place++;
+                }
+                else if(in && !out){
+                    pstmt.setString(place, newIn);
+                    place++;
+                }
+                else if(in && out){
+                    pstmt.setString(place, newOut);
+                    place++;
+                    pstmt.setString(place, newIn);
+                }
+
+                ResultSet rs = pstmt.executeQuery();
+                conn.commit();
+
+                return !rs.next();
+
+            } catch (SQLException e) {
+                System.out.println("Connection couldn't be made with database");
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Connection couldn't be made with database");
+            return false;
         }
+
+
+
+    }
 
     private void ChangeReservation(Scanner scanner) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -371,25 +436,30 @@ public class InnReservations {
             System.out.print("Enter updated last name (or 'no change'): ");
             lname = scanner.nextLine();
 
+            boolean beginChanged = false;
             System.out.print("Enter updated begin date (format: yyyy-MM-dd) (or 'no change'):  ");
             String dateStr = scanner.nextLine();
             if(!dateStr.equals("no change")){
                 try {
                     beginDate = sdf.parse(dateStr);
+                    beginChanged = true;
                 } catch (ParseException e) {
                     System.out.println("Date entered incorrectly");
                 }
             }
 
+            boolean endChanged = false;
             System.out.print("Enter updated end date (format: yyyy-MM-dd) (or 'no change'):  ");
             String dateEndStr = scanner.nextLine();
             if(!dateStr.equals("no change")) {
                 try {
                     endDate = sdf.parse(dateStr);
+                    endChanged = true;
                 } catch (ParseException e) {
                     System.out.println("Date entered incorrectly");
                 }
             }
+
 
             System.out.print("Enter updated number of children (or 'no change'):  ");
             String numChildrenStr = scanner.nextLine();
@@ -466,7 +536,6 @@ public class InnReservations {
             if(!dateStr.equals("no change")){
                 if (firstThing) {
                     sqlStatement += "checkin = ?";
-                    firstThing = false;
                 }
                 else{
                     sqlStatement += ", checkin = ?";
@@ -478,6 +547,11 @@ public class InnReservations {
 
             if(numParams == 0){
                 System.out.println("Didn't update anything");
+                return;
+            }
+
+            if(!checkValidDates(resCode, dateStr, dateEndStr)){
+                System.out.println("Dates overlap with existing reservation, cannot add reservation");
                 return;
             }
 

@@ -20,9 +20,8 @@ public class InnReservations {
         ir.runPrompt(scanner);
     }
 
-
-    private void runPrompt(Scanner scanner) {
-        System.out.println("Select an option\n");
+    private void runPromptStrings(){
+        System.out.println("\nSelect an option\n");
         System.out.println("(1) Rooms and Rates");
         System.out.println("(2) Reservations");
         System.out.println("(3) Reservation Change");
@@ -30,10 +29,14 @@ public class InnReservations {
         System.out.println("(5) Detailed Reservation Information");
         System.out.println("(6) Revenue");
         System.out.println("(0) Exit\n");
+    }
+
+    private void runPrompt(Scanner scanner) {
 
         String input = "garbage";
 
         while(!input.equals('0')){
+            runPromptStrings();
             input = scanner.nextLine();
             switch(input.replaceAll(" ", "")) {
                 case "1":
@@ -66,7 +69,6 @@ public class InnReservations {
                     System.out.println("Not a valid option\n");
                     break;
             }
-            System.out.println("Select an option\n");
         }
     }
 
@@ -366,7 +368,7 @@ public class InnReservations {
             System.out.print("Enter updated first name (or 'no change'): ");
             fname = scanner.nextLine();
 
-            System.out.print("Enter updated last name: (or 'no change')");
+            System.out.print("Enter updated last name (or 'no change'): ");
             lname = scanner.nextLine();
 
             System.out.print("Enter updated begin date (format: yyyy-MM-dd) (or 'no change'):  ");
@@ -423,7 +425,7 @@ public class InnReservations {
                     firstThing = false;
                 }
                 else{
-                    sqlStatement += " and lastname = ?";
+                    sqlStatement += ", lastname = ?";
                 }
                 numParams++;
             }
@@ -434,7 +436,7 @@ public class InnReservations {
                     firstThing = false;
                 }
                 else{
-                    sqlStatement += " and kids = ?";
+                    sqlStatement += ", kids = ?";
                 }
                 numParams++;
             }
@@ -445,7 +447,7 @@ public class InnReservations {
                     firstThing = false;
                 }
                 else{
-                    sqlStatement += " and adults = ?";
+                    sqlStatement += ", adults = ?";
                 }
                 numParams++;
             }
@@ -456,7 +458,7 @@ public class InnReservations {
                     firstThing = false;
                 }
                 else{
-                    sqlStatement += " and checkout = ?";
+                    sqlStatement += ", checkout = ?";
                 }
                 numParams++;
             }
@@ -467,7 +469,7 @@ public class InnReservations {
                     firstThing = false;
                 }
                 else{
-                    sqlStatement += " and checkin = ?";
+                    sqlStatement += ", checkin = ?";
                 }
                 numParams++;
             }
@@ -478,6 +480,7 @@ public class InnReservations {
                 System.out.println("Didn't update anything");
                 return;
             }
+
 
             // Step 3: start transaction
             conn.setAutoCommit(false);
@@ -528,7 +531,7 @@ public class InnReservations {
                     System.out.format("No reservation found with code %s", resCode);
                 }
                 else{
-                    System.out.format("Updated %d reservation with code %s", rowCount, resCode);
+                    System.out.format("\nUpdated %d reservation with code %s\n", rowCount, resCode);
                 }
 
                 conn.commit();
@@ -539,6 +542,7 @@ public class InnReservations {
 
         } catch (SQLException e){
             System.out.println("Connection couldn't be made with database");
+            System.out.println(e.getMessage());
         }
 
     }

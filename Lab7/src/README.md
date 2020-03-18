@@ -5,4 +5,4 @@ b) export HP_JDBC_USER=klbuck
    export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/klbuck?autoReconnect=true\&useSSL=false
    javac InnReservations.java
    java InnReservations
-c) No known bugs or deficiencies
+c) Suggestions don't work for FR2

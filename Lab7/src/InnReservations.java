@@ -605,38 +605,38 @@ public class InnReservations {
                 sqlStatement += "firstname is not null ";
             }
             else
-                sqlStatement += "firstname = ? ";
+                sqlStatement += "firstname LIKE ? ";
 
             if (lastName.equals("")) {
                 sqlStatement += "and lastname is not null ";
             }
             else
-                sqlStatement += "and lastname = ? ";
+                sqlStatement += "and lastname LIKE ? ";
 
 
             if (checkIn.equals("")) {
                 sqlStatement += "and checkIn is not null ";
             }
             else
-                sqlStatement += "and checkIn = ? ";
+                sqlStatement += "and checkIn LIKE ? ";
 
             if (checkOut.equals("")) {
                 sqlStatement += "and checkOut is not null ";
             }
             else
-                sqlStatement += "and checkOut = ? ";
+                sqlStatement += "and checkOut LIKE ? ";
 
             if (roomCode.equals("")) {
                 sqlStatement += "and room is not null ";
             }
             else
-                sqlStatement += "and room = ? ";
+                sqlStatement += "and room LIKE ? ";
 
             if (resCode.equals("")) {
                 sqlStatement += "and code is not null ";
             }
             else
-                sqlStatement += "and code = ? ";
+                sqlStatement += "and code LIKE ? ";
 
             // Step 3: start transaction
             conn.setAutoCommit(false);

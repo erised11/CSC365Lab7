@@ -345,14 +345,21 @@ public class InnReservations {
     private void ChangeReservation(Scanner scanner) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
+
         // Step 1: Establish connection to RDBMS
         try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
                 System.getenv("HP_JDBC_USER"),
                 System.getenv("HP_JDBC_PW"))) {
 
+            boolean firstThing = true;
+
+
+            String sqlStatement = "UPDATE lab7_reservations set ";
+
             // Step 2: Construct sql statement
             String resCode, fname, lname;
             Date beginDate, endDate;
+
             System.out.print("Enter a reservation code to change: ");
             resCode = scanner.nextLine();
 
@@ -362,44 +369,115 @@ public class InnReservations {
             System.out.print("Enter updated last name: (or 'no change')");
             lname = scanner.nextLine();
 
-            System.out.println("Enter updated begin date (format: yyyy-MM-dd): (or 'no change')");
+            System.out.print("Enter updated begin date (format: yyyy-MM-dd) (or 'no change'):  ");
             String dateStr = scanner.nextLine();
             if(!dateStr.equals("no change")){
                 try {
-                    Date dateBegin = sdf.parse(dateStr);
+                    beginDate = sdf.parse(dateStr);
                 } catch (ParseException e) {
                     System.out.println("Date entered incorrectly");
                 }
             }
 
-            System.out.println("Enter updated end date (format: yyyy-MM-dd): (or 'no change')");
+            System.out.print("Enter updated end date (format: yyyy-MM-dd) (or 'no change'):  ");
             String dateEndStr = scanner.nextLine();
             if(!dateStr.equals("no change")) {
                 try {
-                    Date dateEnd = sdf.parse(dateStr);
+                    endDate = sdf.parse(dateStr);
                 } catch (ParseException e) {
                     System.out.println("Date entered incorrectly");
                 }
             }
 
-            int numChildren, numAdults;
-
-            System.out.print("Enter updated number of children: ");
-            try {
-                numChildren = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                System.out.println("A number must be entered for children");
+            System.out.print("Enter updated number of children (or 'no change'):  ");
+            String numChildrenStr = scanner.nextLine();
+            if(!numChildrenStr.equals("no change")){
+                try {
+                    int numChildren = Integer.parseInt(numChildrenStr);
+                } catch (NumberFormatException e) {
+                    System.out.println("A number must be entered for children");
+                }
             }
 
-            System.out.print("Enter updated number of adults: ");
-            try {
-                numAdults = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                System.out.println("A number must be entered for children");
+            System.out.print("Enter updated number of adults (or 'no change'):  ");
+            String numAdultsStr = scanner.nextLine();
+            if(!numAdultsStr.equals("no change")){
+                try {
+                    int numAdults = Integer.parseInt(numAdultsStr);
+                } catch (NumberFormatException e) {
+                    System.out.println("A number must be entered for children");
+                }
             }
 
+            int numParams = 0;
 
-            String sqlStatement = "UPDATE lab7_reservations set where code = ?";
+            if(!fname.equals("no change")){
+                sqlStatement += "firstname = ?";
+                firstThing = false;
+                numParams++;
+            }
+
+            if(!lname.equals("no change")){
+                if (firstThing) {
+                    sqlStatement += "lastname = ?";
+                    firstThing = false;
+                }
+                else{
+                    sqlStatement += " and lastname = ?";
+                }
+                numParams++;
+            }
+
+            if(!numChildrenStr.equals("no change")){
+                if (firstThing) {
+                    sqlStatement += "kids = ?";
+                    firstThing = false;
+                }
+                else{
+                    sqlStatement += " and kids = ?";
+                }
+                numParams++;
+            }
+
+            if(!numAdultsStr.equals("no change")){
+                if (firstThing) {
+                    sqlStatement += "adults = ?";
+                    firstThing = false;
+                }
+                else{
+                    sqlStatement += " and adults = ?";
+                }
+                numParams++;
+            }
+
+            if(!dateEndStr.equals("no change")){
+                if (firstThing) {
+                    sqlStatement += "checkout = ?";
+                    firstThing = false;
+                }
+                else{
+                    sqlStatement += " and checkout = ?";
+                }
+                numParams++;
+            }
+
+            if(!dateStr.equals("no change")){
+                if (firstThing) {
+                    sqlStatement += "checkin = ?";
+                    firstThing = false;
+                }
+                else{
+                    sqlStatement += " and checkin = ?";
+                }
+                numParams++;
+            }
+
+            sqlStatement += "where code = ?";
+
+            if(numParams == 0){
+                System.out.println("Didn't update anything");
+                return;
+            }
 
             // Step 3: start transaction
             conn.setAutoCommit(false);
@@ -407,7 +485,42 @@ public class InnReservations {
             try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
 
                 // Step 4: Send SQL statement to DBMS
-                pstmt.setString(1, resCode);
+
+
+                int numStatements = 1;
+
+                if(!fname.equals("no change")){
+                    pstmt.setString(numStatements, fname);
+                    numStatements += 1;
+                }
+
+                if(!lname.equals("no change")){
+                    pstmt.setString(numStatements, lname);
+                    numStatements += 1;
+                }
+
+                if(!numChildrenStr.equals("no change")){
+                    pstmt.setString(numStatements, numChildrenStr);
+                    numStatements += 1;
+                }
+
+                if(!numAdultsStr.equals("no change")){
+                    pstmt.setString(numStatements, numAdultsStr);
+                    numStatements += 1;
+                }
+
+                if(!dateEndStr.equals("no change")){
+                    pstmt.setString(numStatements, dateEndStr);
+                    numStatements += 1;
+                }
+
+                if(!dateStr.equals("no change")){
+                    pstmt.setString(numStatements, dateStr);
+                    numStatements += 1;
+                }
+
+                pstmt.setString(numStatements, resCode);
+
                 int rowCount = pstmt.executeUpdate();
 
                 // Step 5: Handle results
@@ -415,7 +528,7 @@ public class InnReservations {
                     System.out.format("No reservation found with code %s", resCode);
                 }
                 else{
-                    System.out.format("Deleted %d reservation with code %s", rowCount, resCode);
+                    System.out.format("Updated %d reservation with code %s", rowCount, resCode);
                 }
 
                 conn.commit();

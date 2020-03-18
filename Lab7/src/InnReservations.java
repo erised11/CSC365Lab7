@@ -601,41 +601,24 @@ public class InnReservations {
 
             String sqlStatement = "SELECT * from lab7_reservations where ";
 
-            if (firstName.equals("")) {
+            if (firstName.equals(""))
                 sqlStatement += "firstname is not null ";
-            }
             else
                 sqlStatement += "firstname LIKE ? ";
 
-            if (lastName.equals("")) {
-                sqlStatement += "and lastname is not null ";
-            }
-            else
+            if (!lastName.equals(""))
                 sqlStatement += "and lastname LIKE ? ";
 
-
-            if (checkIn.equals("")) {
-                sqlStatement += "and checkIn is not null ";
-            }
-            else
+            if (!checkIn.equals(""))
                 sqlStatement += "and checkIn LIKE ? ";
 
-            if (checkOut.equals("")) {
-                sqlStatement += "and checkOut is not null ";
-            }
-            else
+            if (!checkOut.equals(""))
                 sqlStatement += "and checkOut LIKE ? ";
 
-            if (roomCode.equals("")) {
-                sqlStatement += "and room is not null ";
-            }
-            else
+            if (!roomCode.equals(""))
                 sqlStatement += "and room LIKE ? ";
 
-            if (resCode.equals("")) {
-                sqlStatement += "and code is not null ";
-            }
-            else
+            if (!resCode.equals(""))
                 sqlStatement += "and code LIKE ? ";
 
             // Step 3: start transaction
@@ -643,7 +626,6 @@ public class InnReservations {
 
             try (PreparedStatement pstmt = conn.prepareStatement(sqlStatement)) {
 
-                System.out.println("***");
                 // Step 4: Send SQL statement to DBMS
                 int numParams = 0;
                 if (!firstName.equals("")) {
@@ -676,10 +658,7 @@ public class InnReservations {
                     pstmt.setString(numParams, resCode);
                 }
 
-                System.out.println("***");
                 ResultSet rs = pstmt.executeQuery();
-
-                System.out.println("sql: " + sqlStatement);
 
                 while(rs.next()) {
                     System.out.print("Reservation Code: " + rs.getInt("code") + ", ");

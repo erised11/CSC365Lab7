@@ -200,23 +200,30 @@ public class InnReservations {
                 return;
             }
 
-            String sqlStatement = "SELECT * from lab7_reservations join lab7_rooms on room = roomcode where ";
+            String sqlStatement = "SELECT * from lab7_rooms where ";
 
-            if (roomCode.equals("")) {
-                sqlStatement += "room is not null ";
+            if (roomCode.equals("Any")) {
+                sqlStatement += "roomcode is not null ";
             }
             else
-                sqlStatement += "room = ? ";
+                sqlStatement += "roomcode = ? ";
             
-            if (bedType.equals("")) {
+            if (bedType.equals("Any")) {
                 sqlStatement += "and bedType is not null ";
             }
             else
                 sqlStatement += "and bedType = ? ";
             
-            sqlStatement += "and checkIn = ? ";
-
-            sqlStatement += "and checkOut = ? ";
+            sqlStatement += "and maxocc >= ? ";
+            
+            sqlStatement += "and roomcode not in (select distinct room from lab7_reservations where ";
+            
+            if (roomCode.equals("Any"))
+                sqlStatement += "room is not null ";
+            else
+                sqlStatement += "room = ? ";
+            
+            sqlStatement += "and (not (? <= checkIn or ? >= checkout)))";
             
             // Step 3: start transaction
             conn.setAutoCommit(false);
@@ -226,30 +233,123 @@ public class InnReservations {
                 // Step 4: Send SQL statement to DBMS
                 int numParams = 0;
                 
-                if (!roomCode.equals("")) {
+                if (!roomCode.equals("Any")) {
                     numParams++;
                     pstmt.setString(numParams, roomCode);
                 }
 
-                if (!bedType.equals("")) {
+                if (!bedType.equals("Any")) {
                     numParams++;
                     pstmt.setString(numParams, bedType);
                 }
                 
                 numParams++;
-                pstmt.setString(numParams, checkIn);
+                pstmt.setString(numParams, numChildren + numAdults);
+                
+                if (!roomCode.equals("Any")) {
+                    numParams++;
+                    pstmt.setString(numParams, roomCode);
+                }
                 
                 numParams++;
                 pstmt.setString(numParams, checkOut);
+                
+                numParams++;
+                pstmt.setString(numParams, checkIn);
                 
                 System.out.println("sql: " + sqlStatement);
                 
                 ResultSet rs = pstmt.executeQuery();
 
-                if (rs.next())
-                    System.out.println("reservations already booked m8, ya fucked");
+                if (rs.next()) {
+                    System.out.println("Here are room options that fit your requests:\n");
+                    
+                    System.out.println("(" + rs.getRow() + ") " + "roomcode: " + rs.getString("roomcode") + "  roomname: " + rs.getString("roomname"));
+                    
+                    while (rs.next()) {
+                        System.out.println("(" + rs.getRow() + ") " + "roomcode: " + rs.getString("roomcode") + "  roomname: " + rs.getString("roomname"));
+                    }
+                    System.out.println();
+                    
+                    System.out.println("Please select your room choice: ");
+                    int roomChoiceIndex = Integer.parseInt(scanner.nextLine());
+                    
+                    // move rs to point at correct row
+                    rs.absolute(roomChoiceIndex);
+                    
+                    System.out.println("\nHere is the info for your selected room");
+                    System.out.println("Name attached to reservation: " + firstName + " " + lastName);
+                    System.out.println("Room code: " + rs.getString("roomcode") + "  Room name: " + rs.getString("roomname") + "  Bed type: " + rs.getString("bedType"));
+                    System.out.println("Check in day: " + checkIn + "  Check out day: " + checkOut);
+                    System.out.println("Number of adults: " + numAdults + "  Number of children: " + numChildren);
+                    
+                    
+                    double cost = 0;
+                    int numDays = 0;
+                    Calendar startCal = Calendar.getInstance(), endCal = Calendar.getInstance();
+                    try {
+                        Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(checkIn), endDate = new SimpleDateFormat("yyyy-MM-dd").parse(checkOut);
+                        startCal.setTime(startDate);
+                        endCal.setTime(endDate);
+                        while(startCal.getTimeInMillis() < endCal.getTimeInMillis()) {
+                            numDays++;
+                            if(startCal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || startCal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                                cost += Double.parseDouble(rs.getString("basePrice")) * 1.10;
+                            } else {
+                                cost += Double.parseDouble(rs.getString("basePrice"));
+                            }
+                            startCal.add(Calendar.DAY_OF_MONTH, 1);
+                        }
+                        cost *= 1.18;
+                        System.out.println("Total cost of stay: " + cost);
+                        
+                    } catch (ParseException e) {
+                        System.out.println("Exception: " + e);
+                    }
+                    
+                    System.out.println("\nWould you like to book this room? (y/n) ");
+                    String bookReservation = scanner.nextLine();
+                    
+                    if (bookReservation.equals("y")) {
+                        String ins = "INSERT INTO lab7_reservations (Code, Room, CheckIn, CheckOut, Rate, LastName, FirstName, Adults, Kids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                        String str = "SELECT MAX(CODE) Code from lab7_reservations";
+                        try (PreparedStatement psmt = conn.prepareStatement(str)) {
+                            ResultSet maxCode = psmt.executeQuery();
+                            maxCode.next();
+                            
+                            try (PreparedStatement psmt2 = conn.prepareStatement(ins)) {
+                                
+                                psmt2.setString(1, Integer.toString(Integer.parseInt(maxCode.getString("Code")) + 1));
+                                psmt2.setString(2, rs.getString("roomcode"));
+                                psmt2.setString(3, checkIn);
+                                psmt2.setString(4, checkOut);
+                                psmt2.setString(5, Double.toString(cost/numDays));
+                                psmt2.setString(6, lastName);
+                                psmt2.setString(7, firstName);
+                                psmt2.setString(8, numAdults);
+                                psmt2.setString(9, numChildren);
+                                
+                                psmt2.executeUpdate();
+                                
+                            } catch (SQLException e) {
+                                System.out.println("Rollback" + e);
+                                conn.rollback();
+                            }
+                            
+                        } catch (SQLException e){
+                            System.out.println("Rollback" + e);
+                            conn.rollback();
+                        }
+                    } else {
+                        System.out.println("\nSorry none of those reservations worked for you.");
+                    }
+                    
+                    
+                }
                 else
-                    System.out.println("reservations open ya mad lad!");
+                    System.out.println("no reservations fit -> print out list of 5 recommendations");
+                    
                 
                 // Step 5: Handle results
 
@@ -281,10 +381,10 @@ public class InnReservations {
                 ResultSet rs = pstmt.executeQuery();
                 
                 while (rs.next()) {
-                    if (rs.getInt("maxOcc") >= (c + a) && roomCode.equals(""))
+                    if (rs.getInt("maxOcc") >= (c + a) && roomCode.equals("Any"))
                         valid = true;
                     else if (roomCode.equals(rs.getString("roomcode"))) {
-                        if (rs.getInt("maxOcc") >= (c + a) && (bedType.equals(rs.getString("bedtype")) || bedType.equals("")))
+                        if (rs.getInt("maxOcc") >= (c + a) && (bedType.equals(rs.getString("bedtype")) || bedType.equals("Any")))
                             valid = true;
                     }
                 }
